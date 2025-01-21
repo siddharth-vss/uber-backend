@@ -103,6 +103,7 @@ The database connection URL and other environment variables are defined in the `
 
 ```properties
 DATABASE_URL='postgresql://username:password@host:port/database?sslmode=require'
+JWT_SECRET='your_jwt_secret'
 ```
 
 ## Database Tables and Models
@@ -132,9 +133,9 @@ The `Captain` model represents the captains (drivers) of the application. It is 
 ```prisma
 model Captain {
   id             String       @id @default(uuid())
-  fullname       Json         // JSON field to store { firstname, lastname }
+  fullname       Json  // JSON field to store { firstname,lastname }
   email          String       @unique
-  password_hash  String
+  password       String
   source         String
   socketId       String
   status         Status       @default(inactive)
@@ -245,8 +246,9 @@ The `UserController` handles the routes related to users. Below are the availabl
 
   ```typescript
   @Get('profile')
-  getUser() {
-    return `Get user with id: `;
+  getUser(@Req() req: Request) {
+    const user = req.user;
+    return `Get user with id: ${user?.id || 'undefined'}`;
   }
   ```
 
@@ -327,6 +329,130 @@ The `UserController` handles the routes related to users. Below are the availabl
   }
   ```
 
+### Captain Routes
+
+The `CaptainController` handles the routes related to captains. Below are the available routes and their descriptions:
+
+- **GET /captains**
+
+  Fetches all captains.
+
+  ```typescript
+  @Get()
+  async getAllCaptains() {
+    return await this.captainService.getAllCaptains();
+  }
+  ```
+
+- **GET /captains/profile**
+
+  Fetches the profile of the currently logged-in captain.
+
+  ```typescript
+  @Get('profile')
+  getCaptain(@Req() req: Request) {
+    const captain = req.captain;
+    return `Get captain with id: ${captain?.id || 'undefined'}`;
+  }
+  ```
+
+- **GET /captains/logout**
+
+  Logs out the currently logged-in captain.
+
+  ```typescript
+  @Get('logout')
+  async logoutCaptain(@Req() req: Request, @Res() res: Response) {
+    return await this.captainService.logoutCaptain(req, res);
+  }
+  ```
+
+- **POST /captains/login**
+
+  Logs in a captain with the provided email and password.
+
+  ```typescript
+  @Post('login')
+  async loginCaptain(@Body() data: Login) {
+    return await this.captainService.login(data);
+  }
+  ```
+
+  #### Request Body
+
+  ```json
+  {
+    "email": "captain@example.com",
+    "password": "password123"
+  }
+  ```
+
+  #### Login Interface
+
+  ```typescript
+  export interface Login {
+    email: string;
+    password: string;
+  }
+  ```
+
+- **POST /captains/register**
+
+  Registers a new captain with the provided email and password.
+
+  ```typescript
+  @Post('register')
+  async registerCaptain(@Body() data: Register) {
+    return await this.captainService.register(data);
+  }
+  ```
+
+  #### Request Body
+
+  ```json
+  {
+    "email": "newcaptain@example.com",
+    "password": "password123",
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "vehicle": {
+      "color": "red",
+      "plate": "ABC123",
+      "capacity": 4,
+      "vehicleType": "car"
+    },
+    "location": {
+      "ltd": 12.34,
+      "lng": 56.78
+    },
+    "socketId": "optionalSocketId"
+  }
+  ```
+
+  #### Register Interface
+
+  ```typescript
+  export interface Register extends Login {
+    fullname: {
+      firstname: string;
+      lastname?: string;
+    };
+    vehicle: {
+      color: string;
+      plate: string;
+      capacity: number;
+      vehicleType: 'car' | 'motorcycle' | 'auto';
+    };
+    location?: {
+      ltd?: number;
+      lng?: number;
+    };
+    socketId?: string;
+  }
+  ```
+
 ### Example Usage
 
 Here is an example of how to use the `UserController` in a client:
@@ -361,8 +487,66 @@ axios.post(`${baseUrl}/login`, {
 
 // Register user
 axios.post(`${baseUrl}/register`, {
+  fullname:{
+    firstname:"new",
+    lastname:"user"
+  },
   email: 'newuser@example.com',
   password: 'password123'
+}).then(response => {
+  console.log(response.data);
+});
+```
+
+
+Here is an example of how to use the `CaptainController` in a client:
+
+```typescript
+import axios from 'axios';
+
+const baseUrl = 'http://localhost:3000/captains';
+
+// Fetch all captains
+axios.get(baseUrl).then(response => {
+  console.log(response.data);
+});
+
+// Fetch captain profile
+axios.get(`${baseUrl}/profile`).then(response => {
+  console.log(response.data);
+});
+
+// Logout captain
+axios.get(`${baseUrl}/logout`).then(response => {
+  console.log(response.data);
+});
+
+// Login captain
+axios.post(`${baseUrl}/login`, {
+  email: 'captain@example.com',
+  password: 'password123'
+}).then(response => {
+  console.log(response.data);
+});
+
+// Register captain
+axios.post(`${baseUrl}/register`, {
+  email: 'newcaptain@example.com',
+  password: 'password123',
+  fullname: {
+    firstname: 'John',
+    lastname: 'Doe'
+  },
+  vehicle: {
+    color: 'red',
+    plate: 'ABC123',
+    capacity: 4,
+    vehicleType: 'car'
+  },
+  location: {
+    ltd: 12.34,
+    lng: 56.78
+  }
 }).then(response => {
   console.log(response.data);
 });
@@ -441,6 +625,82 @@ The `UserService` is responsible for handling operations related to users. It us
   ```typescript
   async deleteUser(id: string): Promise<User> {
     return this.prisma.user.delete({ where: { id } });
+  }
+  ```
+
+## CaptainService
+
+The `CaptainService` is responsible for handling operations related to captains. It uses the Prisma Client to interact with the database.
+
+### Methods
+
+- **createCaptain**
+
+  Creates a new captain.
+
+  ```typescript
+  async createCaptain(captain: Prisma.CaptainCreateInput): Promise<Captain> {
+    return this.prisma.captain.create({ data: captain });
+  }
+  ```
+
+- **register**
+
+  Registers a new captain.
+
+  ```typescript
+  async register(data: Register) {
+    // Implementation
+  }
+  ```
+
+- **login**
+
+  Logs in a captain.
+
+  ```typescript
+  async login(data: Login) {
+    // Implementation
+  }
+  ```
+
+- **getAllCaptains**
+
+  Fetches all captains.
+
+  ```typescript
+  async getAllCaptains(): Promise<Captain[]> {
+    return this.prisma.captain.findMany();
+  }
+  ```
+
+- **getCaptainById**
+
+  Fetches a captain by ID.
+
+  ```typescript
+  async getCaptainById(id: string): Promise<Captain | null> {
+    return this.prisma.captain.findUnique({ where: { id } });
+  }
+  ```
+
+- **updateCaptain**
+
+  Updates a captain.
+
+  ```typescript
+  async updateCaptain(id: string, captain: Prisma.CaptainUpdateInput): Promise<Captain> {
+    return this.prisma.captain.update({ where: { id }, data: captain });
+  }
+  ```
+
+- **deleteCaptain**
+
+  Deletes a captain.
+
+  ```typescript
+  async deleteCaptain(id: string): Promise<Captain> {
+    return this.prisma.captain.delete({ where: { id } });
   }
   ```
 
