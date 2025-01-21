@@ -12,7 +12,7 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "fullname" JSONB NOT NULL,
     "email" TEXT NOT NULL,
-    "password_hash" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     "socketId" TEXT NOT NULL,
 
@@ -24,7 +24,7 @@ CREATE TABLE "Captain" (
     "id" TEXT NOT NULL,
     "fullname" JSONB NOT NULL,
     "email" TEXT NOT NULL,
-    "password_hash" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     "socketId" TEXT NOT NULL,
     "status" "Status" NOT NULL DEFAULT 'inactive',

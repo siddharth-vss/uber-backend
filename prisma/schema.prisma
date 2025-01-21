@@ -34,7 +34,7 @@ model User{
   id             String       @id @default(uuid())
   fullname       Json   // JSON field to store { firstname, lastname }
   email          String       @unique
-  password  String
+  password       String
   source         String
   socketId       String
   rides          Ride[]
@@ -44,7 +44,7 @@ model Captain{
   id             String       @id @default(uuid())
   fullname       Json   // JSON field to store { firstname, lastname }
   email          String       @unique
-  password_hash  String
+  password       String
   source         String
   socketId       String
   status         Status       @default(inactive)
