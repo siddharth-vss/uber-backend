@@ -98,7 +98,7 @@ export class CaptainService {
       !data.vehicle.capacity ||
      !['car','motorcycle', 'auto'].includes(data.vehicle.vehicleType)
     ) {
-      return HttpStatus.BAD_REQUEST;
+      return { status :HttpStatus.BAD_REQUEST,message :"provide all data"};
     }
     const has = await hash(data.password, salt);
     try {
@@ -106,7 +106,7 @@ export class CaptainService {
         where: { email: data.email },
       });
       if (captain) {
-        return HttpStatus.BAD_REQUEST;
+        return { status :HttpStatus.BAD_REQUEST,message :"you are un authorized"};
       }
       const newUser = await this.prisma.captain.create({
         data: {
@@ -121,7 +121,7 @@ export class CaptainService {
       return { token, newUser };
     } catch (error) {
       console.log(error);
-      return HttpStatus.BAD_REQUEST;
+      return { status :HttpStatus.BAD_REQUEST,message :error};
     }
   }
 
@@ -131,18 +131,18 @@ export class CaptainService {
           where: { email: data.email },
         });
         if (!Captain) {
-          return HttpStatus.BAD_REQUEST;
+          return { status :HttpStatus.BAD_REQUEST,message :"provide all currect data"};
         }
   
         const match = await compare(data.password, Captain.password);
         if (!match) {
-          return HttpStatus.BAD_REQUEST;
+          return { status :HttpStatus.BAD_REQUEST,message :"provide currect data"};
         }
         const token = sign({ _id: Captain.id }, process.env.JWT_SECRET);
         return { token, Captain };
       } catch (error) {
         console.log(error);
-        return HttpStatus.BAD_REQUEST;
+        return { status :HttpStatus.BAD_REQUEST,message :error};
       }
     }
 }

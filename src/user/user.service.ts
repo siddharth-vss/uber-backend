@@ -48,7 +48,7 @@ export class UserService {
       !data.fullname.firstname ||
       !data.fullname
     ) {
-      return HttpStatus.BAD_REQUEST;
+      return{ status :HttpStatus.BAD_REQUEST,message :"provide all data"};
     }
     const has = await hash(data.password, salt);
     try {
@@ -56,7 +56,7 @@ export class UserService {
         where: { email: data.email },
       });
       if (user) {
-        return HttpStatus.BAD_REQUEST;
+        return { status :HttpStatus.BAD_REQUEST,message :"user found alredy "};
       }
       const newUser = await this.prisma.user.create({
         data: {
@@ -70,7 +70,7 @@ export class UserService {
       return { token, newUser };
     } catch (error) {
       console.log(error);
-      return HttpStatus.BAD_REQUEST;
+      return { status :HttpStatus.BAD_REQUEST,message :error};
     }
   }
 
@@ -80,18 +80,18 @@ export class UserService {
         where: { email: data.email },
       });
       if (!user) {
-        return HttpStatus.BAD_REQUEST;
+        return { status :HttpStatus.BAD_REQUEST,message :"user not exits"};
       }
 
       const match = await compare(data.password, user.password);
       if (!match) {
-        return HttpStatus.BAD_REQUEST;
+        return { status :HttpStatus.BAD_REQUEST,message :"check credentials "};
       }
       const token = sign({ _id: user.id }, process.env.JWT_SECRET);
       return { token, user };
     } catch (error) {
       console.log(error);
-      return HttpStatus.BAD_REQUEST;
+      return { status :HttpStatus.BAD_REQUEST,message :error};
     }
   }
 
